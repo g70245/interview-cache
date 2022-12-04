@@ -7,13 +7,14 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class FIFOCache implements Cache {
 
     private final int MAX_CACHE_SIZE;
     private final Queue<String> queue = new ConcurrentLinkedQueue<>();
     private final Map<String, Resource> cache = new ConcurrentHashMap<>();
-    private int size = 0;
+    private AtomicInteger size = new AtomicInteger(0);
 
     @Autowired
     public FIFOCache(AppConfig appConfig) {
@@ -46,19 +47,15 @@ public class FIFOCache implements Cache {
     }
 
 
-
     @Override
     public void set(String key, String value, DataWriter dataWriter) {
-        Resource resource;
         synchronized (cache) {
-            resource = cache.get(key);
+            Resource resource = cache.get(key);
             if (resource == null) {
                 resource = new Resource();
                 cache.put(key, resource);
             }
-        }
 
-        synchronized (resource) {
             // use write-through strategy
             if (resource.hasValue()) {
                 updateCache(key, value);
@@ -77,7 +74,7 @@ public class FIFOCache implements Cache {
 
     @Override
     public int size() {
-        return size;
+        return size.get();
     }
 
     private void setCache(String key, String value, Resource resource) {
@@ -91,7 +88,7 @@ public class FIFOCache implements Cache {
             removeHeadCache();
         }
 
-        size += newRecordSize;
+        size.addAndGet(newRecordSize);
         queue.offer(key);
         resource.setValue(value);
     }
@@ -111,9 +108,9 @@ public class FIFOCache implements Cache {
 
         resource.setValue(newValue);
         if (cache.containsKey(key)) {
-            size += difference;
+            size.addAndGet(difference);
         } else {
-            size += newRecordSize;
+            size.addAndGet(newRecordSize);
             cache.put(key, resource);
         }
     }
@@ -122,24 +119,24 @@ public class FIFOCache implements Cache {
         String key = queue.poll();
         if (key != null) {
             Resource resource = cache.remove(key);
-            size -= calculateRecordSize(key, resource.getValue());
+            size.addAndGet(-calculateRecordSize(key, resource.getValue()));
         }
     }
 
     private void removeCache(String key) {
         if (queue.remove(key)) {
             Resource resource = cache.remove(key);
-            size -= calculateRecordSize(key, resource.getValue());
+            size.addAndGet(-calculateRecordSize(key, resource.getValue()));
         }
     }
 
     private boolean doesCacheExceedMaxSize(int addend) {
-        return size + addend > MAX_CACHE_SIZE;
+        return size.get() + addend > MAX_CACHE_SIZE;
     }
 
     private int calculateRecordSize(String key, String value) {
         if (value == null) {
-            return  key.length() * 2;
+            return key.length() * 2;
         }
         return key.length() * 2 + value.length() * 2;
     }
