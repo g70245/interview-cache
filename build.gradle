@@ -29,5 +29,5 @@ tasks.named('test') {
 
 tasks.register('copyReport', Copy) {
 	from layout.buildDirectory.dir("reports/tests")
-	into layout.buildDirectory.dir("resources/main/static")
+	into layout.buildDirectory.dir("../src/main/resources/static")
 }
