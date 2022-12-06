@@ -149,9 +149,8 @@ class FIFOCacheTest {
 
             String cachedValue = cache.get(keyValue, repo::read);
             assertEquals(keyValue, cachedValue);
+            assertTrue(cache.size() <= MAX_CACHE_SIZE);
         }
-
-        assertTrue(cache.size() <= MAX_CACHE_SIZE);
     }
 
     @Test
