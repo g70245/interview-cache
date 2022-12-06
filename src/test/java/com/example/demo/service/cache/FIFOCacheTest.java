@@ -27,11 +27,7 @@ class FIFOCacheTest {
 
     @BeforeEach
     void setUp() {
-        repo = new InMemoryKeyValueStoreRepository();
 
-        AppConfig appConfig = new AppConfig();
-        appConfig.cacheSize = MAX_CACHE_SIZE;
-        cache = new FIFOCache(appConfig);
     }
 
     @Test
@@ -61,7 +57,7 @@ class FIFOCacheTest {
             }
             CompletableFuture.allOf(getters.toArray(new CompletableFuture[0])).get();
 
-            // invoke repo.read() only once within multi-threads, which means cache.get() is thread-safe to each other
+            // invoke repo.read() only once within multi-threads, which means cache.get() is thread-safe to self
             int expectedInvokedTimes = 1;
             assertEquals(expectedInvokedTimes, ((AtomicInteger) test.get(1)).get());
         }
@@ -97,7 +93,7 @@ class FIFOCacheTest {
         CompletableFuture.allOf(deferredPersistingSetter, getter).get();
         long endTime = System.currentTimeMillis();
 
-        // this assertion is not working on docker environment, this issue may be caused by Thread.sleep()
+        // this assertion does not work on docker environment, this issue may be caused by Thread.sleep()
         // assertTrue((endTime - startTime) >= deferredTime);
         // get the latest value, which means cache.get() is thread-safe to cache.set()
         assertEquals(newValue, getter.get());
@@ -179,7 +175,7 @@ class FIFOCacheTest {
                 cache.set("004", "0040", repo::save);
             });
 
-            // the cache size should be 14 with FIFO cache, which means cache.set() is thread-safe
+            // the cache size should be 14 with FIFO cache, which means cache.set() is thread-safe to self
             CompletableFuture.allOf(setterA, setterB).get();
             assertEquals(14, cache.size());
         }
