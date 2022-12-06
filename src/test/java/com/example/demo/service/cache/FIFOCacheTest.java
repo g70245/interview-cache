@@ -131,7 +131,7 @@ class FIFOCacheTest {
         CompletableFuture.allOf(firstDeferredPersistingSetter, secondSetter).get();
         long endTime = System.currentTimeMillis();
 
-        // get the latest value, which means cache.set() is thread-safe to each other
+        // get the latest value, which means cache.set() is thread-safe to self
         String expectedLatestValue = secondUpdateValue;
         String actualLatestValue = cache.get(key, repo::read);
         assertTrue((endTime - startTime) >= deferredTime);
