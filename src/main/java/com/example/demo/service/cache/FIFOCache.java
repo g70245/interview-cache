@@ -58,7 +58,7 @@ public class FIFOCache implements Cache {
 
             // use write-through strategy
             if (resource.hasValue()) {
-                updateCache(key, value);
+                updateCache(key, value, resource);
             } else {
                 setCache(key, value, resource);
             }
@@ -93,14 +93,13 @@ public class FIFOCache implements Cache {
         resource.setValue(value);
     }
 
-    private void updateCache(String key, String newValue) {
+    private void updateCache(String key, String newValue, Resource resource) {
         int newRecordSize = calculateRecordSize(key, newValue);
         if (newRecordSize > MAX_CACHE_SIZE) {
             removeCache(key);
             return;
         }
 
-        Resource resource = cache.get(key);
         int difference = calculateSizeDifference(resource.getValue(), newValue);
         while (!cache.isEmpty() && doesCacheExceedMaxSize(difference)) {
             removeHeadCache();
